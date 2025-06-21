@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AGENTMONUZZ LOGIN </title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap');
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Orbitron', sans-serif;
+      text-transform: uppercase;
+    }
+
+    body {
+      background: black;
+      overflow: hidden;
+      color: white;
+    }
+
+    .matrix-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      z-index: 0;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .container {
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      position: relative;
+      z-index: 1;
+      padding: 20px;
+    }
+
+    .small-title {
+      color: #0ff;
+      margin-bottom: 10px;
+      font-size: 16px;
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px #0ff;
+    }
+
+    .login-box {
+      background: rgba(0, 0, 0, 0.75);
+      border: 2px solid #0ff;
+      box-shadow: 0 0 20px #0ff, 0 0 40px #0ff;
+      padding: 30px 20px;
+      border-radius: 12px;
+      text-align: center;
+      width: 100%;
+      max-width: 350px;
+    }
+
+    h1 {
+      color: #fff;
+      font-size: 28px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px #0ff;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #0ff;
+      caret-color: #0ff; /* Cursor color */
+      outline: none;
+      box-shadow: 0 0 5px rgba(0, 255, 255, 0.5); /* Subtle glow */
+    }
+    input::placeholder {
+        color: rgba(0, 255, 255, 0.6);
+    }
+    input:focus {
+        box-shadow: 0 0 8px #0ff, 0 0 15px #0ff;
+    }
+
+
+    button {
+      padding: 12px 20px;
+      background: #00ffff;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+      width: 100%;
+      margin-top: 5px;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      box-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff;
+      transform: translateY(-2px);
+    }
+    button:active {
+        transform: translateY(0);
+    }
+
+    button.secondary {
+      background: transparent;
+      color: #0ff;
+      border: 1px solid #0ff;
+      box-shadow: 0 0 10px #0ff;
+    }
+    button.secondary:hover {
+      box-shadow: 0 0 15px #0ff, 0 0 30px #0ff;
+      background-color: rgba(0, 255, 255, 0.1);
+    }
+
+
+    .error {
+      color: red;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .loading {
+      color: #0ff;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 500px) {
+      h1 {
+        font-size: 24px;
+      }
+      .small-title {
+        font-size: 14px;
+      }
+      .login-box {
+        padding: 25px 15px;
+      }
+      input, button {
+        padding: 10px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="matrixCanvas" class="matrix-bg"></canvas>
+
+<div class="container">
+  <div class="small-title" id="typingTitle"></div>
+  <div class="login-box">
+    <h1>LOGIN</h1>
+    <input type="text" id="accessKey" placeholder="ENTER ACCESS KEY" />
+    <button onclick="handleLogin()">LOGIN</button>
+    <button class="secondary" onclick="getKey()">GET KEY</button>
+    <div class="loading" id="loading" style="display:none;">VERIFYING...</div>
+    <div class="error" id="error"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+  // Your Firebase configuration (using the test2-56638 project details)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCXnib_9ItsLIsVDdgpOZsfX9uUfS5R4gc", // From your test2-56638 client info
+    authDomain: "test2-56638.firebaseapp.com", // Derived from project_id
+    databaseURL: "https://test2-56638-default-rtdb.firebaseio.com", // From your firebase_url
+    projectId: "test2-56638", // From your project_id
+    storageBucket: "test2-56638.firebasestorage.app", // From your storage_bucket
+    messagingSenderId: "443599261812", // From your project_number
+    // IMPORTANT: The appId below is for Android. For a web app, you should go to your Firebase project settings,
+    // add a "Web app", and use the appId it provides. Using an Android appId in a web context is generally not recommended.
+    appId: "1:443599261812:android:dd0965ff08265fb49f4121"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  function getDeviceId() {
+    let id = localStorage.getItem("device_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("device_id", id);
+    }
+    return id;
+  }
+
+  window.handleLogin = async function () {
+    const key = document.getElementById("accessKey").value.trim();
+    const errorDiv = document.getElementById("error");
+    const loadingDiv = document.getElementById("loading");
+    const deviceId = getDeviceId();
+
+    errorDiv.innerText = "";
+    loadingDiv.style.display = "block";
+
+    if (!key) {
+      loadingDiv.style.display = "none";
+      errorDiv.innerText = "PLEASE ENTER ACCESS KEY.";
+      return;
+    }
+
+    try {
+      // Path to your access keys in Realtime Database, e.g., 'accessKeys/yourkeyvalue'
+      const snap = await get(ref(db, `accessKeys/${key}`));
+      loadingDiv.style.display = "none";
+
+      if (!snap.exists()) {
+        errorDiv.innerText = "ACCESS KEY NOT FOUND.";
+        return;
+      }
+
+      const data = snap.val();
+      const now = Date.now(); // Current time in milliseconds since epoch
+
+      // Check for expiry
+      if (data.expiry && now > data.expiry) {
+        errorDiv.innerText = "ACCESS KEY EXPIRED.";
+        return;
+      }
+
+      // Check device binding
+      if (data.deviceId && data.deviceId !== deviceId) {
+        errorDiv.innerText = "THIS KEY IS ALREADY USED ON ANOTHER DEVICE.";
+        return;
+      }
+
+      // If key is not bound to a device, bind it to the current device
+      if (!data.deviceId) {
+        await update(ref(db, `accessKeys/${key}`), {
+          deviceId: deviceId,
+          lastUsed: now // Optional: record last usage timestamp
+        });
+      } else {
+         // If already bound, just update lastUsed timestamp
+         await update(ref(db, `accessKeys/${key}`), {
+          lastUsed: now
+        });
+      }
+
+
+      // Redirect on successful login
+      window.location.href = "index1.html"; // Make sure 'index1.htmll' exists or change to your desired success page
+
+    } catch (err) {
+      loadingDiv.style.display = "none";
+      errorDiv.innerText = "ERROR DURING LOGIN. PLEASE TRY AGAIN.";
+      console.error("Firebase Login Error:", err);
+    }
+  };
+
+  window.getKey = function () {
+    // This opens a Telegram chat with a pre-filled message
+    const message = encodeURIComponent("HELLO @AGENTMONUZZ, I NEED AN ACCESS KEY.");
+    window.open(`https://t.me/vikasd_trader?text=${message}`, '_blank');
+  };
+</script>
+
+<script>
+  const canvas = document.getElementById("matrixCanvas");
+  const ctx = canvas.getContext("2d");
+  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth;
+
+  const letters = "01"; // Can be extended with more characters if desired
+  const fontSize = 14;
+  const columns = canvas.width / fontSize;
+  const drops = Array.from({ length: columns }).fill(1); // Initialize drops at row 1
+
+  function draw() {
+    // Transparent black rectangle to fade out old characters
+    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#0ff"; // Cyan color for matrix characters
+    ctx.font = fontSize + "px monospace";
+
+    for (let i = 0; i < drops.length; i++) {
+      // Get a random character from the 'letters' string
+      const text = letters[Math.floor(Math.random() * letters.length)];
+      // Draw the character
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+      // Send the drop back to the top randomly after it's passed the canvas height
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0; // Reset to the top
+      }
+      drops[i]++; // Move the drop down
+    }
+  }
+
+  // Draw the matrix effect every 35 milliseconds
+  setInterval(draw, 35);
+
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    // Re-calculate columns and reset drops for new canvas size
+    const newColumns = canvas.width / fontSize;
+    drops.length = newColumns; // Adjust array length
+    for(let i = 0; i < newColumns; i++) {
+        if (drops[i] === undefined) drops[i] = 1;
+    }
+  });
+</script>
+
+<script>
+  const text = "AGENTMONUZZ AI LOGIN";
+  let index = 0;
+  const typingTitleElement = document.getElementById("typingTitle");
+
+  function type() {
+    if (index < text.length) {
+      typingTitleElement.innerHTML += text.charAt(index);
+      index++;
+      setTimeout(type, 100); // Adjust typing speed here (milliseconds)
+    }
+  }
+  // Start the typing animation when the page loads
+  type();
+</script>
+
+</body>
+</html>
